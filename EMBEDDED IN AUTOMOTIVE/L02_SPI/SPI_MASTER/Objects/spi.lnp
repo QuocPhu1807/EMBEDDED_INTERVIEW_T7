@@ -1,0 +1,16 @@
+--cpu Cortex-M3
+".\objects\main.o"
+".\objects\delay.o"
+".\objects\misc_1.o"
+".\objects\stm32f10x_dma_1.o"
+".\objects\stm32f10x_gpio_1.o"
+".\objects\stm32f10x_rcc_1.o"
+".\objects\stm32f10x_spi_1.o"
+".\objects\stm32f10x_tim_1.o"
+".\objects\gpio_stm32f10x_1.o"
+".\objects\startup_stm32f10x_md_2.o"
+".\objects\system_stm32f10x_1.o"
+--strict --scatter ".\Objects\spi.sct"
+--summary_stderr --info summarysizes --map --load_addr_map_info --xref --callgraph --symbols
+--info sizes --info totals --info unused --info veneers
+--list ".\Listings\spi.map" -o .\Objects\spi.axf

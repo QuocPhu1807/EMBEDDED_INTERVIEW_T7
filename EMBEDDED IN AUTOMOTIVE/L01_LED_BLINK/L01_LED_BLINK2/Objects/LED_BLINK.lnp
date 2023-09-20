@@ -1,0 +1,20 @@
+--cpu Cortex-M3
+".\objects\main.o"
+".\objects\misc.o"
+".\objects\stm32f10x_bkp.o"
+".\objects\stm32f10x_crc.o"
+".\objects\stm32f10x_dma.o"
+".\objects\stm32f10x_exti.o"
+".\objects\stm32f10x_flash.o"
+".\objects\stm32f10x_fsmc.o"
+".\objects\stm32f10x_gpio.o"
+".\objects\stm32f10x_rcc.o"
+".\objects\stm32f10x_rtc.o"
+".\objects\stm32f10x_tim.o"
+".\objects\gpio_stm32f10x.o"
+".\objects\startup_stm32f10x_md.o"
+".\objects\system_stm32f10x.o"
+--strict --scatter ".\Objects\LED_BLINK.sct"
+--summary_stderr --info summarysizes --map --load_addr_map_info --xref --callgraph --symbols
+--info sizes --info totals --info unused --info veneers
+--list ".\Listings\LED_BLINK.map" -o .\Objects\LED_BLINK.axf
