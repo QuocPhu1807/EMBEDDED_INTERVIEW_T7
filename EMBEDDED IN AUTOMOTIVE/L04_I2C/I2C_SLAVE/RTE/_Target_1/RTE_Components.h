@@ -3,7 +3,7 @@
  * Auto generated Run-Time-Environment Configuration File
  *      *** Do not modify ! ***
  *
- * Project: 'UART_MASTER' 
+ * Project: 'I2C' 
  * Target:  'Target 1' 
  */
 

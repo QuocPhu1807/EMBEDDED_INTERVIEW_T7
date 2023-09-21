@@ -7,6 +7,7 @@
 #include "stm32f10x.h" 
 #include "stm32f10x_gpio.h"
 #include "stm32f10x_rcc.h"
+#include "stdlib.h"
 
 #define SDA            GPIO_Pin_6
 #define SCL            GPIO_Pin_7
@@ -33,14 +34,19 @@ void transmitDataFrame(uint8_t inputData);
 
 void readDataFromSlave(void);
 void writeDataForSlave(void);
-void dataOfMaster(uint8_t data);
+void dataOfMaster(uint8_t* dataReceive);
 
 
 int main(void){
 	
 	configuration();
 	
-	dataOfMaster(0x50);
+	uint8_t* dataReceive = (uint8_t *)malloc(2*sizeof(uint8_t));
+	
+	dataReceive[0] = 0x40;
+	dataReceive[1] = 0x80;
+	
+	dataOfMaster(dataReceive);
 	
 	checkDataOfLed();
 	
@@ -172,7 +178,7 @@ void readDataFromSlave(){
 	clockForPinSCL();
 }
 
-void dataOfMaster(uint8_t data){
+void dataOfMaster(uint8_t* dataReceive){
 	
 	uint8_t i = 0;
 	again:
@@ -186,14 +192,17 @@ void dataOfMaster(uint8_t data){
 	writeDataForSlave();
 	
 	// transmit data 2 byte and chech bit ACK from SLAVE.
-	while(i < 2){
+	
+	for(uint8_t i = 0; i < 2; i++){
 		
 	setInputForPinSDA();
 	
 	if(GPIO_ReadInputDataBit(PORTS, SDA) == ACK){
 	
+		
 		setOutputForPinSDA();
-		transmitDataFrame(data);
+		clockForPinSCL();
+		transmitDataFrame(dataReceive[i]);
 	}
 	else if (GPIO_ReadInputDataBit(PORTS, SDA) == NACK){
 		
@@ -203,7 +212,10 @@ void dataOfMaster(uint8_t data){
 	
 	i++;
 }
-		
+	
+
+		setInputForPinSDA();
+
 	if (GPIO_ReadInputDataBit(PORTS, SDA) == NACK){
 			
 			setOutputForPinSDA();	
@@ -213,5 +225,4 @@ void dataOfMaster(uint8_t data){
 		setOutputForPinSDA();
 	  clockForPinSCL();
 	  endFrame();
-	
 }

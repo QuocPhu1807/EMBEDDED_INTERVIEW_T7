@@ -2,7 +2,7 @@
 * File: main.c
 * Author: Doan Quoc Phu
 * Date: 20/09/2023
-* Description: This is a file for transfering data from Master to Slave by I2C protocol.
+* Description: This is a file for receiving data from Master by I2C protocol.
 */
 #include "stm32f10x.h" 
 #include "stm32f10x_gpio.h"
@@ -28,7 +28,7 @@ uint8_t receiveAddress(void);
 void ActiveOfSlave(uint8_t* dataReceive, uint8_t sizeData);
 void waitForEndFrame(void);
 
-void setInputForPinSDA(void);
+//void setInputForPinSDA(void);
 void setOutputForPinSDA(void);
 
 int main(void){
