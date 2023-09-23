@@ -8,6 +8,7 @@
 #include "stm32f10x_gpio.h"
 #include "stm32f10x_rcc.h"
 #include "stdlib.h"
+#include "Delay.h"
 
 #define Tx      GPIO_Pin_6
 #define Rx      GPIO_Pin_7
@@ -15,7 +16,6 @@
 
 #define LED     GPIO_Pin_13
 
-void delayTime(double time);
 void checkled(void);
 void configurationGpioUart(void);
 void configurationGpioLed(void);
@@ -34,36 +34,29 @@ int main(void){
 	uint8_t i = 0;
 	
 	GPIO_SetBits(PORTS, Rx);
-	delayTime(1000);
+	delayMs(1000);
 	
 	while(i < 4){
 	
 		waitForStartReceive();
 			
-		*(dataReceive + i)= receiveData();
+		*dataReceive = receiveData();
 			
 		waitForEndReceive();
 			
 		checkled();                // receive data: 1 byte then turn on Led PC13
-			
+		dataReceive++;
 		i++;
 	}
 	free(dataReceive);
 	return 0;
 }
 
-void delayTime(double time){
-	
-	for(int i = 0; i < time; i++);
-}
-
-
 void configurationGpioUart(){
 	
 	GPIO_InitTypeDef gpio;
 	
 	/*ENABLE CLOCK*/
-	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOC, ENABLE);
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOB, ENABLE);
 	
 	/*PB7 RX*/
@@ -92,41 +85,41 @@ void configurationGpioLed(){
 void waitForStartReceive(){
 
 	while(GPIO_ReadInputDataBit(PORTS, Rx) == 1)
-	delayTime(12.5);
+	delayMs(15);
 }
 void waitForEndReceive(){
 	
 	while(GPIO_ReadInputDataBit(PORTS, Rx) == 0);
-	delayTime(20);
+	delayMs(20);
 }
 
 void checkled(){
 	
 	GPIOC->BSRR = GPIO_BSRR_BR13;
-	delayTime(200);								 // bit time
+	delayMs(100);								 // bit time
 	GPIOC->BSRR = GPIO_BSRR_BS13;
-	delayTime(200);								 // bit time
+	delayMs(100);								 // bit time
 	
 }
 
 uint8_t receiveData(){
 
 	uint8_t data  = 0;
-	uint8_t count = 0;
+	uint8_t countBit1 = 0;
 			
-	for(uint8_t i = 0 ; i< 9; i++ ){
+	for(uint8_t i = 0 ; i < 9; i++ ){
 	
 	if(GPIO_ReadInputDataBit(PORTS,Rx) == 1) { 
 		
 		 if(i < 8 ) data |= 1 << i;
 			
-		 count++;
+		 countBit1++;
 	}
 	
-	delayTime(5);
+	delayMs(10);
 	
 	}
 	
-	if(count % 2 == 0 ) return data;
+	if(countBit1 % 2 == 0 ) return data;
 	
 }

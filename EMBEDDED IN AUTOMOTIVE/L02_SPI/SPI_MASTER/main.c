@@ -8,6 +8,8 @@
 #include "stm32f10x.h"
 #include "stm32f10x_rcc.h"
 #include "stm32f10x_gpio.h"
+#include "Delay.h"
+#include "stdlib.h"
 
 #define SCLK    GPIO_Pin_13
 #define MOSI    GPIO_Pin_15
@@ -15,12 +17,6 @@
 #define PORTS   GPIOB
 
 #define LED     GPIO_Pin_13
-
-void delay(int time){
-
-	for(int i = 0; i < time; i++);
-	
-}
 
 void configuration(){
 
@@ -50,53 +46,60 @@ void spiInit(){
 
 void clockPulse(){                
 	
-	GPIO_SetBits(PORTS, SS);        // CPHA = 0 : leading edge is rising edge which is sampled data
-	delay(100);
-	GPIO_ResetBits(PORTS, SS);
-	delay(100);
+	GPIO_SetBits(PORTS, SCLK);        // CPHA = 0 : leading edge is rising edge which is sampled data
+	delayMs(100);
+	GPIO_ResetBits(PORTS, SCLK);
+	delayMs(100);
 		
 }
 
-void transmitData(int inputData){
+void transmitData(uint8_t transmitData){
 	
 	GPIO_ResetBits(PORTS, SS);
 	
 	for(uint8_t i = 0; i < 8; i++){
 	
-			if(inputData & (1 << 0))   GPIO_SetBits(PORTS, MOSI);
+			if(transmitData & (1 << 0))   GPIO_SetBits(PORTS, MOSI);
 			else GPIO_ResetBits(PORTS, MOSI);
 		
 			clockPulse();
 	}
 	
 	GPIO_SetBits(PORTS, SS);
-	delay(50);
+	delayMs(50);
 }
 
 void ledCode(){
 		
 	GPIO_ResetBits(GPIOC,LED);
-	delay(100);
+	delayMs(100);
 	GPIO_SetBits(GPIOC,LED);
-	delay(100);
+	delayMs(100);
 }
 
 int main(){
 	
 	configuration();
-	
-	uint8_t inputData[] = {0x30, 0x40, 0x70, 0x90};
-	uint8_t i = 0;
-	
 	spiInit();
 	
+	uint8_t i =0;
+	uint8_t *transmitdata = (uint8_t*)malloc(4*sizeof(uint8_t));
+	
+  transmitdata[0] = 0x40;
+	transmitdata[1] = 0x50;
+	transmitdata[2] = 0x60;
+	transmitdata[3] = 0x70;
+	
 	while(i < 4){
-			
-			transmitData(inputData[i]);
+	
+		transmitData(*transmitdata);
 		
-			ledCode();
-			i++;	
+		ledCode();
+		
+		transmitdata++;
+		i++;
 	}
 	
+  free(transmitdata);	
 	return 0;
-	}
+}

@@ -8,6 +8,8 @@
 #include "stm32f10x.h"
 #include "stm32f10x_rcc.h"
 #include "stm32f10x_gpio.h"
+#include "stdlib.h"
+#include "Delay.h"
 
 #define SCLK    GPIO_Pin_13
 #define MOSI    GPIO_Pin_15
@@ -15,11 +17,6 @@
 #define PORTS   GPIOB
 
 #define LED     GPIO_Pin_13
-
-void delay(int time){
-	
-	for(int i = 0; i < time; i++);
-}
 
 void configuration(){
 
@@ -68,9 +65,9 @@ uint8_t receiveData(){
 void ledCode(){
 
 		GPIO_SetBits(GPIOC,LED);
-		delay(100);
+		delayMs(100);
 		GPIO_ResetBits(GPIOC,LED);
-		delay(100);
+		delayMs(100);
 }
 
 
@@ -78,17 +75,18 @@ int main(){
 
 		configuration();
 	
-		uint8_t receivedata[4] ={0,0,0,0};
+	  uint8_t *receivedata = (uint8_t*)malloc(4*sizeof(uint8_t));
+	
 		uint8_t i = 0;
 		
-		while( i < 4){
+		while(i < 4){
 		
-			receivedata[i] = receiveData();                   // receive data: 1 byte after turning on the led PC13
+			*receivedata = receiveData();                   
 		
-			ledCode();
+			ledCode();                     // receive data: 1 byte after turning on the led PC13
+			receivedata++;
 			i++;
 			
 		}	
 	  return 0;
-
 }

@@ -1,4 +1,5 @@
 .\objects\delay.o: Delay.c
+.\objects\delay.o: Delay.h
 .\objects\delay.o: C:\Keil_v5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.1\Device\Include\stm32f10x.h
 .\objects\delay.o: .\RTE\_SPI_MASTER\RTE_Components.h
 .\objects\delay.o: C:\Keil_v5\ARM\PACK\ARM\CMSIS\5.5.1\CMSIS\Core\Include\core_cm3.h

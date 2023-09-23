@@ -8,6 +8,7 @@
 #include "stm32f10x_gpio.h"
 #include "stm32f10x_rcc.h"
 #include "stdlib.h"
+#include "Delay.h"
 
 #define SDA            GPIO_Pin_6
 #define SCL            GPIO_Pin_7
@@ -20,26 +21,22 @@
 #define READ           1
 
 void configuration(void);
-void Delay(int time);
 void checkDataOfLed(void);
 void waitForReceiveData(void);
 uint8_t receiveDataFrame(void);
 uint8_t receiveAddress(void);
-void ActiveOfSlave(uint8_t* dataReceive, uint8_t sizeData);
 void waitForEndFrame(void);
 
-//void setInputForPinSDA(void);
+uint8_t * ActiveOfSlave();
+
+void setInputForPinSDA(void);
 void setOutputForPinSDA(void);
 
 int main(void){
 	
-	uint8_t *dataReceive = (uint8_t*)malloc(2*sizeof(uint8_t));
-	
-	//dataReceive = (uint8_t*)realloc(dataReceive,5*sizeof(uint8_t));
-	
 	configuration();
 	
-  ActiveOfSlave(dataReceive, 2);
+	uint8_t *dataReceive = ActiveOfSlave();
 	
 	checkDataOfLed();
 	
@@ -71,17 +68,12 @@ void configuration(){
 }
 
 
-void Delay(int time){
-
-		for(int i = 0; i < time; i++);
-}
-
 void checkDataOfLed(){
 
 	GPIO_SetBits(GPIOC,GPIO_Pin_13);
-	Delay(200);
+	delayMs(200);
 	GPIO_ResetBits(GPIOC,GPIO_Pin_13);
-	Delay(200);
+	delayMs(200);
 	
 }
 
@@ -108,11 +100,12 @@ void setOutputForPinSDA(){
 
 void waitForReceiveData(){
 
-	while(GPIO_ReadInputDataBit(PORTS, SCL) == 0){
+	while(GPIO_ReadInputDataBit(PORTS, SCL) == 0){};
 		
-		if(GPIO_ReadInputDataBit(PORTS, SDA) == 0)
-		while(GPIO_ReadInputDataBit(PORTS, SCL) == 1);
-		break;
+	if(GPIO_ReadInputDataBit(PORTS, SDA) == 0){
+		
+		while(GPIO_ReadInputDataBit(PORTS, SCL) == 1){};
+			
 	}
 	
 }
@@ -126,9 +119,9 @@ uint8_t receiveAddress(){
 		
 	while(GPIO_ReadInputDataBit(PORTS, SCL) == 0);
 	
-	if(GPIO_ReadInputDataBit(PORTS, SDA) == 1) addressFrame_7bit |= 1<<i;
+	if(GPIO_ReadInputDataBit(PORTS, SDA) == 1) addressFrame_7bit |= 1<<i; // LSB.....MSB  
 		
-	while(GPIO_ReadInputDataBit(PORTS, SCL) == 1);
+	while(GPIO_ReadInputDataBit(PORTS, SCL) == 1);												// when use:  receiveData |= 0x80 << i      MSB....LSB
 		
 	}
 	
@@ -155,12 +148,12 @@ uint8_t receiveDataFrame(){
 	return receiveData;
 }
 
-void ActiveOfSlave(uint8_t *dataReceive, uint8_t sizeData){
+uint8_t *ActiveOfSlave(){
 
+	uint8_t *dataReceive =(uint8_t*)malloc(2*sizeof(uint8_t));
 	uint8_t addressFrame;
 	uint8_t bitWriteOrRead;
 	uint8_t i = 0;
-	
 	
 	waitForReceiveData();
 	
@@ -175,36 +168,37 @@ void ActiveOfSlave(uint8_t *dataReceive, uint8_t sizeData){
 		GPIO_SetBits(PORTS, SDA);
 		while(GPIO_ReadInputDataBit(PORTS, SCL) == 0);
 		setInputForPinSDA();
-		return ;
+		
 	}
 	
 	while(GPIO_ReadInputDataBit(PORTS, SCL) == 0);
 	setInputForPinSDA();
 	
-	
 	if(bitWriteOrRead == WRITE) {                                     // Write Data 
 	
-		while(i < sizeData){
+		while(i < 2){
 		
 			again:
-			dataReceive[i] = receiveDataFrame();
+			*dataReceive = receiveDataFrame();
 			setOutputForPinSDA();
-			if(*(dataReceive + i) != 0)  GPIO_ResetBits(PORTS, SDA);     // ACK 
+			if(*dataReceive != 0)  GPIO_ResetBits(PORTS, SDA);          // ACK 
 			else {
 				
 				GPIO_SetBits(PORTS, SDA);                                 // NACK
 			  goto again;
 			}
 			while(GPIO_ReadInputDataBit(PORTS, SCL) == 0);
-			setInputForPinSDA();
-		
+			setInputForPinSDA();	
 		}
 	
+		dataReceive++;
 		i++;
-}
+  }
 
 	 waitForEndFrame();
 	
+	return dataReceive;
+	free(dataReceive);
 }
 
 void waitForEndFrame(){

@@ -7,33 +7,33 @@
 
 #include "stm32f10x_gpio.h"
 #include "stm32f10x_rcc.h"
+#include "Delay.h"
+#include "stdlib.h"
 
 #define Tx   		GPIO_Pin_6
 #define Rx   		GPIO_Pin_7
-#define PORT 		GPIOB
+#define PORTS 		GPIOB
 
 #define LED     GPIO_Pin_13
-
-void delayTime(int time){
-	
-	for(int i = 0; i < time; i++);
-}
 
 void configurationGpioUart(){
 
 	GPIO_InitTypeDef gpio;
 	
-	RCC_APB2PeriphClockCmd(RCC_APB2ENR_IOPBEN, ENABLE);
+	/*ENABLE CLOCK*/
+	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOB, ENABLE);
 	
-	gpio.GPIO_Pin = Tx;
+	/*PB6 TX*/
+	gpio.GPIO_Pin   = Tx;
 	gpio.GPIO_Speed = GPIO_Speed_2MHz;
 	gpio.GPIO_Mode  = GPIO_Mode_Out_PP;
-	GPIO_Init(PORT, &gpio);
+	GPIO_Init(PORTS, &gpio);
 	
-	gpio.GPIO_Pin = Rx;
+	/*PB7 RX*/
+	gpio.GPIO_Pin   = Rx;
 	gpio.GPIO_Speed = GPIO_Speed_2MHz;
 	gpio.GPIO_Mode  = GPIO_Mode_IPU;
-	GPIO_Init(PORT, &gpio);
+	GPIO_Init(PORTS, &gpio);
 	
 }
 
@@ -48,18 +48,18 @@ void configurationGpioLed(){
 	
 }
 
-void ledInit(){
+void checkled(){
 	
-	GPIOC->BSRR = GPIO_BSRR_BS13;
-	delayTime(200);
 	GPIOC->BSRR = GPIO_BSRR_BR13;
-	
+	delayMs(100);                 // bit time
+	GPIOC->BSRR = GPIO_BSRR_BS13;
+	delayMs(100); 
 }
 
 void startCondition(){
 
-	GPIO_ResetBits(PORT,Tx);
-	delayTime(10);
+	GPIO_ResetBits(PORTS,Tx);
+	delayMs(10);                 // bit time
 	
 }
 
@@ -72,11 +72,11 @@ uint8_t transmitData(uint8_t data){
 		 if(data & (1 << 0)) {
 			
 				countBit ++;
-				GPIO_SetBits(PORT, Tx);
+				GPIO_SetBits(PORTS, Tx);
 			
-		 } else GPIO_ResetBits(PORT, Tx);
+		 } else GPIO_ResetBits(PORTS, Tx);
 		 
-		 delayTime(5);      // bit time
+		 delayMs(10);             // bit time
 	}
 	
 	return countBit;
@@ -85,20 +85,18 @@ uint8_t transmitData(uint8_t data){
 
 void bitParity(uint8_t countBit){
 	
-	if( countBit % 2 != 0) GPIO_SetBits(PORT, Tx);
+	if( countBit % 2 != 0) GPIO_SetBits(PORTS, Tx);
 	
-	else GPIO_ResetBits(PORT, Tx);
+	else GPIO_ResetBits(PORTS, Tx);
 	
-	delayTime(5);      // bit time
+	delayMs(10);      // bit time
 
 }
 
 void endCondition(){
 	
-	GPIO_SetBits(PORT, Tx);
-	delayTime(5);      // bit time
-	GPIO_SetBits(PORT, Tx);     
-	delayTime(5);			 // bit time
+	GPIO_SetBits(PORTS, Tx);
+	delayMs(20);      // bit time
 }
 
 int main(){
@@ -106,27 +104,35 @@ int main(){
 	configurationGpioUart();
 	configurationGpioLed();
 	
-	uint8_t data[] = {128, 130, 145, 160};
+	uint8_t *transmitdata = (uint8_t*)malloc(4*sizeof(uint8_t));
+	
+	transmitdata[0] = 0x2A;
+	transmitdata[1] = 0x3B;
+	transmitdata[2] = 0x4C;
+	transmitdata[3] = 0x5D;
+	
 	uint8_t i = 0;
 	uint8_t countBit = 0;
 	
-	GPIO_SetBits(PORT, Tx);
-	delayTime(1000);
+	GPIO_SetBits(PORTS, Tx);
+	delayMs(1000);
 	
 	while(i < 4){
 	
 			startCondition();
 			
-		  countBit = transmitData(data[i]);
+		  countBit = transmitData(*transmitdata);
 			
 			bitParity(countBit);
 			
 			endCondition();
 			
-		  ledInit();                  // transmit data: 1 byte then turn on Led PC13
+		  checkled();                  // transmit data: 1 byte then turn on Led PC13
 			
+		  transmitdata++;
 		  i++;
 	}
 	
+	free(transmitdata);
   return 0;
 }

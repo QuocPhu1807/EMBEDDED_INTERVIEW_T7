@@ -8,6 +8,7 @@
 #include "stm32f10x_gpio.h"
 #include "stm32f10x_rcc.h"
 #include "stdlib.h"
+#include "Delay.h"
 
 #define SDA            GPIO_Pin_6
 #define SCL            GPIO_Pin_7
@@ -20,7 +21,6 @@
 #define READ           1
 
 void configuration(void);
-void Delay(int time);
 void checkDataOfLed(void);
 
 void clockForPinSCL(void);
@@ -34,22 +34,30 @@ void transmitDataFrame(uint8_t inputData);
 
 void readDataFromSlave(void);
 void writeDataForSlave(void);
-void dataOfMaster(uint8_t* dataReceive);
+void dataOfMaster(uint8_t dataTransmit);
 
 
 int main(void){
 	
 	configuration();
 	
-	uint8_t* dataReceive = (uint8_t *)malloc(2*sizeof(uint8_t));
+	uint8_t i = 0;
+	uint8_t* dataTransmit = (uint8_t *)malloc(2*sizeof(uint8_t));
 	
-	dataReceive[0] = 0x40;
-	dataReceive[1] = 0x80;
+	dataTransmit[0] = 0x40;
+	dataTransmit[1] = 0x80;
 	
-	dataOfMaster(dataReceive);
+	while(i < 2){
 	
-	checkDataOfLed();
+		dataOfMaster(*dataTransmit);
+		
+		checkDataOfLed();
+			
+		dataTransmit++;
+		i++;
+	}
 	
+	free(dataTransmit);
 	return 0;
 }
 
@@ -78,22 +86,17 @@ void configuration(){
 void clockForPinSCL(){
 
 	GPIO_SetBits(PORTS,SCL);
-	Delay(100);
+	delayMs(100);
 	GPIO_ResetBits(PORTS,SCL);
-	Delay(100);
-}
-
-void Delay(int time){
-
-		for(int i = 0; i < time; i++);
+	delayMs(100);
 }
 
 void checkDataOfLed(){
 
 	GPIO_SetBits(GPIOC,GPIO_Pin_13);
-	Delay(200);
+	delayMs(200);
 	GPIO_ResetBits(GPIOC,GPIO_Pin_13);
-	Delay(200);
+	delayMs(200);
 	
 }
 
@@ -107,14 +110,14 @@ void setOriginalStatus(){
 void startFrame(){
 
 	GPIO_ResetBits(PORTS, SDA);
-	Delay(60);
+	delayMs(60);
 	GPIO_ResetBits(PORTS, SCL);
 }
 
 void endFrame(){
 	
 	GPIO_SetBits(PORTS, SCL);
-	Delay(60);
+	delayMs(60);
 	GPIO_SetBits(PORTS, SDA);
 }
 
@@ -143,7 +146,7 @@ void transmitAddressFrame(uint8_t address){
 	
 	for(uint8_t i = 0 ; i < 7; i++){
 		
-	if( address & (1 << 0) ) GPIO_SetBits(PORTS,SDA);
+	if( address & (1 << 0)) GPIO_SetBits(PORTS,SDA);
 		
 	else GPIO_ResetBits(PORTS, SDA);	
 		
@@ -166,43 +169,44 @@ void transmitDataFrame(uint8_t inputData){
 
 void writeDataForSlave(){
 
-	// transmit bit write to Slave
+	// transmit write bit to Slave
 	GPIO_ResetBits(PORTS, SDA);
 	clockForPinSCL();
 }
 
 void readDataFromSlave(){
 
-	// transmit bit write to Slave
+	// transmit read bit to Slave
 	GPIO_SetBits(PORTS, SDA);
 	clockForPinSCL();
 }
 
-void dataOfMaster(uint8_t* dataReceive){
+void dataOfMaster(uint8_t dataTransmit){
 	
 	uint8_t i = 0;
 	again:
 	
 	setOriginalStatus();
-	Delay(500);
+	delayMs(500);
 	
 	startFrame();
 	
+	// transmit address format: 7 bit
 	transmitAddressFrame(SLAVEADDRESS);
 	writeDataForSlave();
 	
-	// transmit data 2 byte and chech bit ACK from SLAVE.
+	
+	// transmit data 2 byte and check bit ACK from SLAVE.
 	
 	for(uint8_t i = 0; i < 2; i++){
 		
 	setInputForPinSDA();
-	
+		
 	if(GPIO_ReadInputDataBit(PORTS, SDA) == ACK){
 	
-		
 		setOutputForPinSDA();
 		clockForPinSCL();
-		transmitDataFrame(dataReceive[i]);
+		transmitDataFrame(dataTransmit);
 	}
 	else if (GPIO_ReadInputDataBit(PORTS, SDA) == NACK){
 		
@@ -210,11 +214,10 @@ void dataOfMaster(uint8_t* dataReceive){
 		goto again;
 	}
 	
-	i++;
+	
 }
 	
-
-		setInputForPinSDA();
+	setInputForPinSDA();
 
 	if (GPIO_ReadInputDataBit(PORTS, SDA) == NACK){
 			
